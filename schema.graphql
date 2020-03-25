@@ -1,0 +1,151 @@
+scalar DateTime
+
+enum PhotoCategory {
+    ACTION
+    SELFIE
+    PORTRAIT
+    LANDSCAPE
+    GRAPHIC
+}
+
+"""
+A user that has been authorized by Github atleast once.
+"""
+type User {
+    """
+    Users's first and last name.
+    """
+    name: String!
+    """
+    User's URL for the github profile photo.
+    """
+    avatar: String
+    """
+    Users's unique login ID.
+    """
+    githubLogin: ID!
+    """
+    All the photos posted by the user.
+    """
+    postedPhotos(
+        filter: PhotoFilter paging: DataPage sorting: DataSort
+    ): [Photo!]!
+    inPhotos: [Photo!]!
+    friends: [Friendship!]!
+}
+
+type Photo {
+    id: ID!
+    name: String!
+    url: String!
+    description: String
+    created: DateTime!
+    category: PhotoCategory!
+    postedBy: User!
+    taggedUsers(
+        sorting: DataSort
+    ): [User!]!
+}
+
+type Query {
+    totalPhotos: Int!
+    allPhotos(
+        paging: DataPage filter: PhotoFilter sorting: DataSort
+    ): [Photo!]!
+    allUsers(paging: DataPage sorting: DataSort): [User!]!
+    totalUsers: Int!
+    agenda: [AgendaItem!]!
+    User(githubLogin: String!): User!
+    Photo(id: ID!): Photo!
+}
+
+type Friendship {
+    friends: [User!]!
+    how_long: Int!
+    where_we_met: Location
+}
+
+schema {
+    query: Query
+    mutation: Mutation
+    subscription: Subscription
+}
+
+interface AgendaItem {
+    name: String!
+    start: DateTime!
+    end: DateTime!
+}
+
+type StudyGroup implements AgendaItem {
+    name: String!
+    start: DateTime!
+    end: DateTime!
+    topic: String!
+    participants: [User!]!
+}
+
+type Workout {
+    name: String!
+    start: DateTime!
+    end: DateTime!
+    reps: Int!
+}
+
+enum SortDirection {
+    ASCENDING
+    DESCENDING
+}
+
+enum SortablePhotoField {
+    name
+    description
+    category
+    created
+}
+
+type Mutation {
+    postPhoto(
+        input: PostPhotoInput!
+    ): Photo!
+
+    githubAuth(code: String!): AuthPayload!
+}
+
+type Subscription {
+    newPhoto(category: PhotoCategory): Photo!
+    newUser: User!
+}
+
+input PostPhotoInput {
+    name: String!
+    description: String
+    category: PhotoCategory=PORTRAIT
+}
+
+input PhotoFilter {
+    category: PhotoCategory
+    createdBetween: DateRange
+    taggedUsers: [ID!]
+    searchText: String
+}
+
+input DateRange {
+    start: DateTime!
+    end: DateTime!
+}
+
+input DataPage {
+    first: Int=25
+    start: Int=0
+}
+
+input DataSort {
+    sort: SortDirection=DESCENDING
+    sortBy: SortablePhotoField=created
+}
+
+type AuthPayload {
+    user: User!
+    token: String!
+}
